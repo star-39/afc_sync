@@ -98,7 +98,7 @@ void init_afc(afc_client_t afc, char* src, char* dst)
         reverse_sort(dirs);
         for (int i = 0; dirs[i]; i++) {
             if (skip_count > options.max_skips) {
-                printf("max retry reached! exiting...\r\n");
+                printf("max skips reached! exiting...\r\n");
                 break;
             }
             if (!strcmp(dirs[i], ".") || !strcmp(dirs[i], "..")) {
