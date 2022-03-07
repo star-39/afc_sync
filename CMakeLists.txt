@@ -16,7 +16,6 @@ add_library(imobiledevice SHARED IMPORTED)
 set_target_properties(imobiledevice PROPERTIES IMPORTED_LOCATION "${DLLS}" IMPORTED_IMPLIB "${DLLS}")
 set_target_properties(imobiledevice PROPERTIES LINKER_LANGUAGE C)
 include_directories(include)
-
 target_link_libraries(afc_sync imobiledevice)
 endif (WIN32)
 
@@ -26,6 +25,4 @@ find_package(PkgConfig REQUIRED)
 pkg_search_module(IMD REQUIRED IMPORTED_TARGET libimobiledevice-1.0)
 include_directories(${IMD_INCLUDE_DIRS})
 target_link_libraries(afc_sync ${IMD_LDFLAGS})
-
 endif (UNIX)
-

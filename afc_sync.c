@@ -41,7 +41,7 @@ int pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, int* ski
     if (stat(dst, &fstat) == 0) {
         if (options.skip_exist) {
             printf("file exists, skipping dst: %s\r\n", dst);
-            if (*skip_count != -1)
+            if (options.max_skips != 0)
                 *skip_count += 1;
             return -1;
         }
@@ -132,7 +132,7 @@ int main(int argc, // Number of strings in array argv
 {
     options.skip_exist = 0;
     options.max_skips = 0;
-    skip_count = -1;
+    skip_count = 0;
     options.network = 0;
 
     for (int c = 0; c < argc; c++) {
