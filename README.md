@@ -11,3 +11,14 @@ If `--skip-exist` is specified, existing file on PC will not be overwritten.
 If `--max-skip` specified, after skipping n files, program will terminate.
 
 If `--network` specified, attemp to connect over network.
+
+## Build
+### *nix
+* Depends `pkg-config` and `libmobiledevice` development files.
+
+### Windows
+* Simply cmake the project. You can install Visual Studio with CMake.
+
+
+## License
+GPL v3
