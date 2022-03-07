@@ -33,16 +33,15 @@ void reverse_sort(char* arr[])
     qsort(arr, len, sizeof(char*), comp);
 }
 
-int pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, int* skip_count)
+int pull_afc(afc_client_t afc, char* src, char* dst, long long st_size)
 {
     struct stat fstat;
     stat(dst, &fstat);
-    // file exists.
     if (stat(dst, &fstat) == 0) {
         if (options.skip_exist) {
             printf("file exists, skipping dst: %s\r\n", dst);
             if (options.max_skips != 0)
-                *skip_count += 1;
+                skip_count += 1;
             return -1;
         }
     }
@@ -117,12 +116,12 @@ void init_afc(afc_client_t afc, char* src, char* dst)
                 mkdir(dst_new, 0755);
                 init_afc(afc, src_new, dst_new);
             } else {
-                pull_afc(afc, src_new, dst_new, st_size, &skip_count);
+                pull_afc(afc, src_new, dst_new, st_size);
             }
         }
         afc_dictionary_free(dirs);
     } else {
-        pull_afc(afc, src, dst, st_size, &skip_count);
+        pull_afc(afc, src, dst, st_size);
     }
 }
 
