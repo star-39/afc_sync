@@ -1,14 +1,26 @@
-﻿#include <libimobiledevice/afc.h>
+﻿#define _CRT_SECURE_NO_WARNINGS
+#include <libimobiledevice/afc.h>
 #include <libimobiledevice/libimobiledevice.h>
 #include <libimobiledevice/lockdown.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <direct.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/utime.h>
+#include <time.h>
 
 #define TOOL_NAME "idevice_afc"
 #define AFC_SERVICE_NAME "com.apple.afc"
+
+#ifdef WIN32
+#define mkdir _mkdir
+#define utime _utime
+#define utimbuf _utimbuf
+#define stat _stat
+#endif // WIN32
+
 
 int skip_count;
 
@@ -33,47 +45,69 @@ void reverse_sort(char* arr[])
     qsort(arr, len, sizeof(char*), comp);
 }
 
-int pull_afc(afc_client_t afc, char* src, char* dst, long long st_size)
+void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, long st_mtime)
 {
-    struct stat fstat;
-    stat(dst, &fstat);
-    if (stat(dst, &fstat) == 0) {
-        if (options.skip_exist) {
-            printf("file exists, skipping dst: %s\r\n", dst);
+    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %ld)\r\n", src, dst, st_size, st_mtime);
+    struct stat stat_buf;
+    struct utimbuf utime_buf;
+    if (stat(dst, &stat_buf) == 0) {
+        if (options.skip_exist && stat_buf.st_size == st_size) {
+            printf("dst file exists! skipping...\r\n");
             if (options.max_skips != 0)
                 skip_count += 1;
-            return -1;
+            return;
         }
     }
 
-    char* buf = malloc(st_size);
+    char* buf = (char*)malloc(st_size);
     uint32_t bytes = 0;
+    uint32_t bytes_read = 0;
     FILE* fp;
-    uint64_t handle = NULL;
+    uint64_t handle;
     afc_file_mode_t mode = AFC_FOPEN_RDONLY;
     fp = fopen(dst, "wb");
-    printf("attempting to write src: %s --> dst: %s (st_size: %lld)\r\n", src, dst, st_size);
     afc_error_t err = afc_file_open(afc, src, mode, &handle);
-    err = afc_file_read(afc, handle, buf, st_size, &bytes);
     if (err != AFC_E_SUCCESS) {
-        printf("error opening and reading file!\n\r");
-        return 1;
-    } else {
-        fwrite(buf, st_size, 1, fp);
+        printf("error opening file!\n\r");
+        goto cleanup;
     }
+
+    while (bytes_read < st_size) {
+        afc_error_t errr = afc_file_read(afc, handle, buf, st_size, &bytes);
+        if (errr != AFC_E_SUCCESS) {
+            printf("error reading file!\n\r");
+            goto cleanup;
+        }
+        bytes_read += bytes;
+    }
+
+    utime_buf.modtime = st_mtime;
+    if (utime(dst, &utime_buf) == 0) {
+        printf("pull OK.\n\r");
+    } else {
+        printf("pull OK. Failed setting mtime\n\r");
+    }
+
+cleanup:
     fclose(fp);
-    free(buf);
     afc_file_close(afc, handle);
-    return 0;
+    free(buf);
+
 }
 
-int get_ftype_isdir_afc(afc_client_t afc, char* src, long long* st_size)
+int check_file_isdir_afc(afc_client_t afc, char* src, long long* st_size, long* st_mtime)
 {
     char** info = NULL;
-    afc_error_t ret = afc_get_file_info(afc, src, &info);
+    afc_error_t err = afc_get_file_info(afc, src, &info);
+    if (err != AFC_E_SUCCESS) {
+        printf("failed getting file info!\r\n");
+        return 1;
+    }
     for (int i = 0; info[i]; i += 2) {
         if (!strcmp(info[i], "st_size")) {
             *st_size = atoll(info[i + 1]);
+        } else if (!strcmp(info[i], "st_mtime")) {
+            *st_mtime = (time_t)(atoll(info[i + 1]) / 1000000000);
         }
         if (!strcmp(info[i], "st_ifmt")) {
             if (!strcmp(info[i + 1], "S_IFDIR")) {
@@ -86,14 +120,14 @@ int get_ftype_isdir_afc(afc_client_t afc, char* src, long long* st_size)
     return 0;
 }
 
-void init_afc(afc_client_t afc, char* src, char* dst)
+void init_pull_afc(afc_client_t afc, char* src, char* dst)
 {
-    char** info = NULL;
-    long long st_size = NULL;
-    int is_dir = 0;
+    long long st_size = 0;
+    long st_mtime = 0;
     char** dirs = NULL;
-    if (get_ftype_isdir_afc(afc, src, &st_size)) {
-        mkdir(dst, 0755);
+    if (check_file_isdir_afc(afc, src, &st_size, &st_mtime)) {
+
+        mkdir(dst);
         afc_read_directory(afc, src, &dirs);
         reverse_sort(dirs);
         for (int i = 0; dirs[i]; i++) {
@@ -112,16 +146,16 @@ void init_afc(afc_client_t afc, char* src, char* dst)
             strcpy(dst_new, dst);
             strcat(dst_new, "/");
             strcat(dst_new, dirs[i]);
-            if (get_ftype_isdir_afc(afc, src_new, &st_size)) {
-                mkdir(dst_new, 0755);
-                init_afc(afc, src_new, dst_new);
+            if (check_file_isdir_afc(afc, src_new, &st_size, &st_mtime)) {
+                mkdir(dst_new);
+                init_pull_afc(afc, src_new, dst_new);
             } else {
-                pull_afc(afc, src_new, dst_new, st_size);
+                pull_afc(afc, src_new, dst_new, st_size, st_mtime);
             }
         }
         afc_dictionary_free(dirs);
     } else {
-        pull_afc(afc, src, dst, st_size);
+        pull_afc(afc, src, dst, st_size, st_mtime);
     }
 }
 
@@ -129,6 +163,8 @@ int main(int argc, // Number of strings in array argv
     char* argv[], // Array of command-line argument strings
     char** envp) // Array of environment variable strings)
 {
+    time_t time_start = time(NULL);
+
     options.skip_exist = 0;
     options.max_skips = 0;
     skip_count = 0;
@@ -177,13 +213,16 @@ int main(int argc, // Number of strings in array argv
 
     if (afc) {
         printf("afc OK!\n\r");
-        init_afc(afc, options.src, options.dst);
+        init_pull_afc(afc, options.src, options.dst);
     }
 
     printf("cleaning up...\r\n");
     afc_client_free(afc);
     lockdownd_client_free(lockdown);
     idevice_free(device);
+
+    time_t time_end = time(NULL);
+    printf("time elapsed: %lld s\r\n", time_end - time_start);
 
     return 0;
 }
