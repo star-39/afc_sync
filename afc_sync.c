@@ -14,12 +14,10 @@
 #define TOOL_NAME "idevice_afc"
 #define AFC_SERVICE_NAME "com.apple.afc"
 
-#ifdef WIN32
 #define mkdir _mkdir
 #define utime _utime
 #define utimbuf _utimbuf
 #define stat _stat
-#endif // WIN32
 
 
 int skip_count;
@@ -45,11 +43,11 @@ void reverse_sort(char* arr[])
     qsort(arr, len, sizeof(char*), comp);
 }
 
-void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, long st_mtime)
+void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, time_t st_mtime)
 {
-    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %ld)\r\n", src, dst, st_size, st_mtime);
+    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %lld)\r\n", src, dst, st_size, st_mtime);
     struct stat stat_buf;
-    struct utimbuf utime_buf;
+    struct _utimbuf utime_buf;
     if (stat(dst, &stat_buf) == 0) {
         if (options.skip_exist && stat_buf.st_size == st_size) {
             printf("dst file exists! skipping...\r\n");
@@ -78,14 +76,17 @@ void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, long st
             printf("error reading file!\n\r");
             goto cleanup;
         }
+        fwrite(buf, bytes, 1, fp);
         bytes_read += bytes;
     }
 
+    fclose(fp);
+
     utime_buf.modtime = st_mtime;
-    if (utime(dst, &utime_buf) == 0) {
-        printf("pull OK.\n\r");
-    } else {
+    if (_utime(dst, &utime_buf) == -1) {
         printf("pull OK. Failed setting mtime\n\r");
+    } else {
+        printf("pull OK.\n\r");
     }
 
 cleanup:
@@ -95,7 +96,7 @@ cleanup:
 
 }
 
-int check_file_isdir_afc(afc_client_t afc, char* src, long long* st_size, long* st_mtime)
+int check_file_isdir_afc(afc_client_t afc, char* src, long long* st_size, time_t* st_mtime)
 {
     char** info = NULL;
     afc_error_t err = afc_get_file_info(afc, src, &info);
@@ -123,7 +124,7 @@ int check_file_isdir_afc(afc_client_t afc, char* src, long long* st_size, long* 
 void init_pull_afc(afc_client_t afc, char* src, char* dst)
 {
     long long st_size = 0;
-    long st_mtime = 0;
+    time_t st_mtime = 0;
     char** dirs = NULL;
     if (check_file_isdir_afc(afc, src, &st_size, &st_mtime)) {
 
@@ -189,15 +190,14 @@ int main(int argc, // Number of strings in array argv
     lockdownd_service_descriptor_t service = NULL;
 
     if (idevice_new_with_options(&device, udid, (options.network) ? IDEVICE_LOOKUP_NETWORK : IDEVICE_LOOKUP_USBMUX) != IDEVICE_E_SUCCESS) {
-        fprintf(stderr, "ERROR: No device found.\n");
+        printf("ERROR: No device found.\n");
         return -1;
     }
     lockdownd_client_t lockdown = NULL;
     lockdownd_error_t lerr = lockdownd_client_new_with_handshake(device, &lockdown, TOOL_NAME);
     if (lerr != LOCKDOWN_E_SUCCESS) {
         idevice_free(device);
-        fprintf(
-            stderr, "ERROR: Could not connect to lockdownd, error code %d\n", lerr);
+        printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
         return -1;
     }
     if ((lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service) != LOCKDOWN_E_SUCCESS) || !service) {
