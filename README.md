@@ -12,6 +12,9 @@ If `--max-skip` specified, after skipping n files, program will terminate.
 
 If `--network` specified, attemp to connect over network.
 
+## GUI
+A Flutter cross-platfrom GUI wrapper is available at: https://github.com/star-39/afc_sync_flutter
+
 ## Build
 ### *nix
 * Depends `pkg-config` and `libmobiledevice` development files.
