@@ -14,11 +14,12 @@
 #define TOOL_NAME "idevice_afc"
 #define AFC_SERVICE_NAME "com.apple.afc"
 
+#ifdef WIN32
 #define mkdir _mkdir
 #define utime _utime
 #define utimbuf _utimbuf
 #define stat _stat
-
+#endif // WIN32
 
 int skip_count;
 
@@ -47,10 +48,10 @@ void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, time_t 
 {
     printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %lld)\r\n", src, dst, st_size, st_mtime);
     struct stat stat_buf;
-    struct _utimbuf utime_buf;
+    struct utimbuf utime_buf;
     if (stat(dst, &stat_buf) == 0) {
         if (options.skip_exist && stat_buf.st_size == st_size) {
-            printf("dst file exists! skipping...\r\n");
+            printf("file exists! skipping...\r\n");
             if (options.max_skips != 0)
                 skip_count += 1;
             return;
@@ -83,7 +84,7 @@ void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size, time_t 
     fclose(fp);
 
     utime_buf.modtime = st_mtime;
-    if (_utime(dst, &utime_buf) == -1) {
+    if (utime(dst, &utime_buf) == -1) {
         printf("pull OK. Failed setting mtime\n\r");
     } else {
         printf("pull OK.\n\r");
