@@ -49,7 +49,7 @@ void reverse_sort(char *arr[])
 
 void pull_afc(afc_client_t afc, char *src, char *dst, long long st_size, time_t mtime)
 {
-    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %lld)\r\n", src, dst, st_size, mtime);
+    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %ld)\r\n", src, dst, st_size, mtime);
     struct stat stat_buf;
     struct utimbuf utime_buf;
     if (stat(dst, &stat_buf) == 0)
@@ -270,7 +270,7 @@ int main(int argc,     // Number of strings in array argv
     idevice_free(device);
 
     time_t time_end = time(NULL);
-    printf("time elapsed: %lld s\r\n", time_end - time_start);
+    printf("time elapsed: %ld s\r\n", time_end - time_start);
 
     return 0;
 }
