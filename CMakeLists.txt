@@ -8,7 +8,6 @@ project ("afc_sync")
 # Add source to this project's executable.
 add_executable (afc_sync "afc_sync.c" )
 
-# TODO: Add tests and install targets if needed.
 if (WIN32)
 find_library(DLLS NAMES imobiledevice PATHS lib)
 message(STATUS "find_library returned ${DLLS}")

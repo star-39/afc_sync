@@ -18,9 +18,10 @@ A Flutter cross-platfrom GUI wrapper is available at: https://github.com/star-39
 ## Build
 ### *nix
 * Depends `pkg-config` and `libmobiledevice` development files.
+* Both CMake and Meson are supported, if one fails, try another.
 
 ### Windows
-* Simply cmake the project. You can install Visual Studio with CMake.
+* Only CMake and a C compiler is required.
 
 
 ## License
