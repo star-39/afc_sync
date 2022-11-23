@@ -16,29 +16,24 @@ If `--network` specified, attemp to connect over network.
 A Flutter cross-platfrom GUI wrapper is available at: https://github.com/star-39/afc_sync_flutter
 
 ## Build
-### Linux
-* Depends `pkg-config` and `libmobiledevice` development files.
+### UNIX
+* Depends on `pkg-config` and `libmobiledevice` .
 * Both CMake and Meson are supported, if one fails, try another.
 
 Example:
 ```
-dnf in pkg-config cmake libimobiledevice-devel
-cmake .
-make
-```
-
-### Darwin
-* It's recommended to use Meson build.
-
-Example:
-```
+# RedHat
+dnf in pkg-config meson libimobiledevice-devel
+# Darwin
 brew install meson libimobiledevice
+
 meson setup build
 ninja -vC build
 ```
 
 ### Windows
-* Only CMake and a C compiler(MSVC) are required.
+* CMake and a C compiler(MSVC) are required.
+* You need to put prebuilt libimobiledevice's DLL files together with the afc_sync EXE.
 
 
 ## License
