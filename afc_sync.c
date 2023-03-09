@@ -195,7 +195,10 @@ int main(int argc, // Number of strings in array argv
             options.max_skips = atoi(argv[c + 1]);
         } else if (!strcmp(argv[c], "--udid")) {
             options.udid = argv[c + 1];
-        }
+        } else if (!strcmp(argv[c], "--help")) {
+			printf("--udid --src --dst --skip-exist --max-skips\n");
+			return 0;
+		}
     }
 
     idevice_info_t* dev_list = NULL;
