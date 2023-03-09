@@ -18,7 +18,7 @@ A Flutter cross-platfrom GUI wrapper is available at: https://github.com/star-39
 ## Build
 ### UNIX
 * Depends on `pkg-config` and `libmobiledevice` .
-* Both CMake and Meson are supported, if one fails, try another.
+* Meson.
 
 Example:
 ```
@@ -32,8 +32,8 @@ ninja -vC build
 ```
 
 ### Windows
-* CMake and a C compiler(MSVC) are required.
-* You need to put prebuilt libimobiledevice's DLL files together with the afc_sync EXE.
+* Use MSYS2 to build.
+* You need to put libimobiledevice's DLL files together with the afc_sync EXE.
 
 
 ## License
