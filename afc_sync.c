@@ -50,7 +50,7 @@ void reverse_sort(char* arr[])
 void pull_afc(afc_client_t afc, char* src, char* dst, long long st_size,
     time_t mtime)
 {
-    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %lld)\r\n", src, dst,
+    printf("pulling [ %s --> %s ] (st_size: %lld, st_mtime: %ld)\r\n", src, dst,
         st_size, mtime);
     struct stat stat_buf;
     struct utimbuf utime_buf;
@@ -230,14 +230,13 @@ int main(int argc, // Number of strings in array argv
         }
     }
 
-	printf("Initializing lockdownd with device:%s", options.udid);
+	printf("Initializing lockdownd with device: %s\n", options.udid);
 
     idevice_device_list_extended_free(dev_list);
 
     idevice_t device = NULL;
     lockdownd_service_descriptor_t service = NULL;
 
-    printf("Using %s\n", options.udid);
     if (idevice_new_with_options(&device, options.udid,
             IDEVICE_LOOKUP_NETWORK | IDEVICE_LOOKUP_USBMUX)
         != IDEVICE_E_SUCCESS) {
@@ -251,10 +250,17 @@ int main(int argc, // Number of strings in array argv
         printf("ERROR: Could not connect to lockdownd, error code %d\n", lerr);
         return -1;
     }
+	char* name = NULL;
+	lerr = lockdownd_get_device_name(lockdown, &name);
+	if (name) {
+		printf("Device name is: %s\n", name);
+	}
+
     if ((lockdownd_start_service(lockdown, AFC_SERVICE_NAME, &service) != LOCKDOWN_E_SUCCESS) || !service) {
         lockdownd_client_free(lockdown);
         idevice_free(device);
-        printf("failed to start service!");
+        printf("failed to start AFC service!\n");
+		return -1;
     }
 
     afc_client_t afc = NULL;
@@ -273,7 +279,7 @@ int main(int argc, // Number of strings in array argv
     idevice_free(device);
 
     time_t time_end = time(NULL);
-    printf("time elapsed: %lld s\r\n", time_end - time_start);
+    printf("time elapsed: %ld s\r\n", time_end - time_start);
 
     return 0;
 }
